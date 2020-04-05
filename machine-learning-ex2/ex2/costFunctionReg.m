@@ -19,7 +19,17 @@ grad = zeros(size(theta));
 
 
 
+% Compute the hypothesis to make the next line a little shorter
+h_x = sigmoid(X * theta);
 
+% Compute cost, add regularization term summing all theta except the first element
+J = 1/m * sum(-y .* log(h_x) - (1-y) .* log(1 - h_x) ) + lambda/(2*m) * sum(theta(2:end).^2);
+
+% Create a regularization vector, make the first term 0 so we don't regularize theta_0 
+reg_vect = lambda/m .* theta;
+reg_vect(1) = 0;
+
+grad = 1/m .* X' * (h_x - y) + reg_vect;
 
 
 % =============================================================
