@@ -23,7 +23,7 @@ p = zeros(size(X, 1), 1);
 
 X = [ ones(m,1) X ];
 a_1 = [ ones(num_labels,1) sigmoid(X * Theta1') ];
-[elem, p] = max(sigmoid(a_1 * Theta2'), [], 1 );
+[elem, p] = max(sigmoid(a_1 * Theta2'), [], 2 );
 p = p'
 
 
