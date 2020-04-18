@@ -19,8 +19,10 @@ function [J grad] = nnCostFunction(nn_params, ...
 Theta1 = reshape(nn_params(1:hidden_layer_size * (input_layer_size + 1)), ...
                  hidden_layer_size, (input_layer_size + 1));
 
+
 Theta2 = reshape(nn_params((1 + (hidden_layer_size * (input_layer_size + 1))):end), ...
                  num_labels, (hidden_layer_size + 1));
+
 
 % Setup some useful variables
 m = size(X, 1);
@@ -38,6 +40,21 @@ Theta2_grad = zeros(size(Theta2));
 %         variable J. After implementing Part 1, you can verify that your
 %         cost function computation is correct by verifying the cost
 %         computed in ex4.m
+
+yvec = zeros(m,10);  % expand the y vector into a matrix of row vectors
+for i = 1:m
+  yvec(i,y(i)) = 1;
+end
+
+
+X = [ones(m,1) X];             % Add column of ones
+z1 = X * Theta1';              % calculate z1 (weighted input)
+a1 = [ones(m,1) sigmoid(z1)];  % add column of ones to sigmoid of z1
+z2 = a1 * Theta2';             % calculate z2
+h = sigmoid(z2);
+
+J = 1/m * sum( sum( -yvec.*log(h) - (1-yvec).*log(1-h) ) ) ...
+        + lambda/(2*m) * ( sum(sum(Theta1(:,2:end).^2)) + sum(sum(Theta2(:,2:end).^2)) )
 %
 % Part 2: Implement the backpropagation algorithm to compute the gradients
 %         Theta1_grad and Theta2_grad. You should return the partial derivatives of
