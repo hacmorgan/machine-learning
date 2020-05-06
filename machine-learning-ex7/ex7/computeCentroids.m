@@ -26,11 +26,14 @@ centroids = zeros(K, n);
 % Note: You can use a for-loop over the centroids to compute this.
 %
 
+divisors = zeros(K,1);
 
-
-
-
-
+% First pass: we sum the centroids
+for i = 1:m
+  centroids(idx(i),:) += X(i,:);
+  divisors(idx(i)) ++;
+end
+centroids = centroids ./ divisors;
 
 
 % =============================================================

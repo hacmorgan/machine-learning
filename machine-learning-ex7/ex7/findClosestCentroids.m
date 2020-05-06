@@ -21,6 +21,18 @@ idx = zeros(size(X,1), 1);
 % Note: You can use a for-loop over the examples to compute this.
 %
 
+for i = 1:numel(idx)
+  best_dist=realmax;
+  best_id=-1;
+  for j = 1:K
+    dist = sqrt( sum( (X(i,:)-centroids(j,:)).^2 ) );
+    if dist < best_dist
+      best_dist = dist;
+      best_id=j;
+    end
+  end
+  idx(i) = best_id;
+end
 
 
 
