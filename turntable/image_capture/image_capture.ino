@@ -101,12 +101,14 @@ void captureFrame(unsigned int frameWidth, unsigned int frameHeight) {
       byteToWrite |= ((PINA2_DIGITAL_READ() == HIGH) << 2);
       byteToWrite |= ((PINA1_DIGITAL_READ() == HIGH) << 1);
       byteToWrite |= ((PINA0_DIGITAL_READ() == HIGH));
-      UDR0 = byteToWrite; // send data via serial connection with UART register (we need to use the serial register directly for fast transfer)
+      //UDR0 = byteToWrite; // send data via serial connection with UART register (we need to use the serial register directly for fast transfer)
+      Serial.print(byteToWrite);
       while (PIN2_DIGITAL_READ() == LOW); // wait until PCLK pin is high
       while (PIN2_DIGITAL_READ() == HIGH); // wait until PCLK pin is low
       // ignore each second byte (for a grayscale image we only need each first byte, which represents luminescence)
     }
   }
+
   sei(); // enable all interrupts
   
   delay(1000);
