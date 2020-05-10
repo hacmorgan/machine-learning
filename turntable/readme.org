@@ -3,3 +3,32 @@
 The wiring was done according to this diagram:
 [[./image_capture/wiring_diagram.jpg
 ]]
+** Code (RPi and Webcam)
+The python script will save images as 64x48 grayscale images, represented as CSVs. The format of the image when it comes in is as a 48 element numpy array, each with 64 values, so these will be witten to the csv one row of the numpy array at a time. e.g.:
+
+1 2 3 4
+5 6 7 8
+becomes
+1,2,3,4,5,6,7,8
+
+note: the values will remain on the interval [0,255], so converting to a range between 0 and 1 will have to be done later.
+
+**** TODO the script should take an argument to determine the name of the file it saves to
+
+*check the existing images' quality!*
+
+*** Classifier
+**** TODO Make a Tkinter inteface that shows a number of images at a time, one big and the next (say) 9 small.
+**** TODO Have a drop down box for classification type
+**** TODO Allow the user to apply that classification to the big image (one button), or to all the images, or an input. This means each image should have a number title
+**** TODO The use must also be able to move back and forth to an image (or multiple) at a time
+
+
+* Training
+** Stages
+*** TODO 1: train on ONLY hip-hop data and test with hip-hop data, record results!
+*** TODO 2: collct non-hip-hop data (store separately)
+**** TODO 2.1: test non-hip-hop data on the network that has been trained on hip-hop  
+**** TODO 2.2: Train a network on all data, but *the same number of training examples*
+i.e. remove some of the hip-hop and replace with non
+*** TODO 3: Compare the results!
