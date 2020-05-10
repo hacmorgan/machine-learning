@@ -1,0 +1,5 @@
+* Image capture
+** Wiring
+The wiring was done according to this diagram:
+[[./image_capture/wiring_diagram.jpg
+]]
