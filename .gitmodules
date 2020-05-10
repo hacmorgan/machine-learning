@@ -1,0 +1,6 @@
+[submodule "turntable/image_capture/ov7670-no-ram-arduino-uno"]
+	path = turntable/image_capture/ov7670-no-ram-arduino-uno
+	url = https://github.com/ComputerNerd/ov7670-no-ram-arduino-uno.git
+[submodule "turntable/image_capture/simpleFrameGrabber"]
+	path = turntable/image_capture/simpleFrameGrabber
+	url = https://github.com/ComputerNerd/simpleFrameGrabber.git
