@@ -1,19 +1,23 @@
 * Image capture
-** Wiring
-The wiring was done according to this diagram:
-[[./image_capture/wiring_diagram.jpg
-]]
 ** Code (RPi and Webcam)
-The python script will save images as 64x48 grayscale images, represented as CSVs. The format of the image when it comes in is as a 48 element numpy array, each with 64 values, so these will be witten to the csv one row of the numpy array at a time. e.g.:
+- The python script will capture images as 64x48 grayscale images.
+- We will save these to disk as CSVs. The format of the image when it comes in is as a 48 element numpy array, each with 64 values, so these will be witten to the csv one row of the numpy array at a time. e.g.:
 
 1 2 3 4
 5 6 7 8
+
 becomes
+
 1,2,3,4,5,6,7,8
 
 note: the values will remain on the interval [0,255], so converting to a range between 0 and 1 will have to be done later.
 
-**** TODO the script should take an argument to determine the name of the file it saves to
+- we will append a final 0 to each row of the CSV. This will be its classification, which will be modified and rewritten by the `label` program.
+
+**** DONE the script should take an argument to determine the name of the file it saves to
+**** TODO add zeros to the existing data
+**** TODO convert that data to binary
+**** TODO write new data as binary with zeros
 
 *check the existing images' quality!*
 
@@ -32,3 +36,13 @@ note: the values will remain on the interval [0,255], so converting to a range b
 **** TODO 2.2: Train a network on all data, but *the same number of training examples*
 i.e. remove some of the hip-hop and replace with non
 *** TODO 3: Compare the results!
+
+** List of records used for training
+*** hip-hop
+**** 7" singles (and the 10" GE Cypher)
+- Trials + K21: Soylent
+- Aesop Rock: Klutz
+- Golden Era: 2016 Cypher
+
+**** 12" LPs
+- Hilltop Hoods: State of the Art
