@@ -24,6 +24,7 @@ def get_args():
 
 def get_data():
     global args
+    global num_records
     with open(args.input_file, "rb") as infile:
         records = np.frombuffer(infile.read(), dtype=np.uint8)
     num_records = int(np.shape(records)[0] / (img_width*img_height+1))
@@ -117,12 +118,15 @@ def annotate(image, index):
     
 def next_image_callback(event=None):
     global master_index
-    master_index+=1
+    global num_records
+    if master_index < num_records:
+        master_index+=1
     draw_images()
     
 def previous_image_callback(event=None):
     global master_index
-    master_index-=1
+    if master_index > 0:
+        master_index-=1
     draw_images()
     
 def classify_0_callback(event=None):
