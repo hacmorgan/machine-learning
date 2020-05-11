@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import cv2
+import numpy as np
+
+with open ("../training_data/webcam.csv", "r") as datafile:
+    for row in datafile:
+        image = np.fromstring(row, dtype='double', sep=',').reshape((48,64))
+        image /= 255.0
+        print(image)
+        cv2.imshow("image", image)
+        cv2.waitKey(0)
+
