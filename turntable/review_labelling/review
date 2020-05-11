@@ -3,11 +3,23 @@
 import cv2
 import numpy as np
 
-with open ("../training_data/webcam.csv", "r") as datafile:
-    for row in datafile:
-        image = np.fromstring(row, dtype='double', sep=',').reshape((48,64))
-        image /= 255.0
-        print(image)
-        cv2.imshow("image", image)
-        cv2.waitKey(0)
+# with open ("../training_data/webcam.csv", "r") as datafile:
+#     for row in datafile:
+#         imagee= np.fromstring(row, dtype='double', sep=',').reshape((48,64))
+#         image /= 255.0
+#         print(image)
+#         cv2.imshow("image", image)
+#         cv2.waitKey(0)
 
+with open ("../training_data/test.bin", "rb") as datafile:
+    all_data = np.frombuffer(datafile.read(), dtype=np.uint8)
+
+num_records = int(np.shape(all_data)[0] / (64*48+1))
+
+print(num_records)
+
+formatted_data = all_data.reshape((num_records, 48*64+1))
+one_example = formatted_data[0,:-1].reshape((48,64))
+cv2.imshow("extracted", one_example)
+cv2.waitKey(0)
+print(formatted_data[0,:])

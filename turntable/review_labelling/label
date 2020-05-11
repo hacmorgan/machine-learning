@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+
+import time
+import tkinter
+import cv2
+import PIL.Image, PIL.ImageTk
+import argparse
+import sys
+import signal
+import numpy as np
+
+
+img_width = 64
+img_height = 48
+
+
+def get_args():
+    global args
+    parser = argparse.ArgumentParser(description='labelling tool using Tkinter')
+    parser.add_argument('--input-file', '-i', type=str, required=True, help='file containing the images and default 0 classifications')
+    parser.add_argument('--output-file', '-o', type=str, required=True, help='file to write to with updated annotations')
+    args = parser.parse_args()
+
+
+def get_data():
+    global args
+    with open(args.input_file, "rb") as infile:
+        records = np.frombuffer(infile.read(), dtype=np.uint8)
+    num_records = int(np.shape(records)[0] / (img_width*img_height+1))
+    return records.reshape((num_records, img_width*img_height+1))
+
+
+def create_gui():
+    # Create the window
+    global window
+    window = tkinter.Tk()
+    # Create the canvases
+    global canvases
+    canvases = []
+    # Main canvas
+    canvases.append(tkinter.Canvas(window, width=img_width*6, height=img_height*6))
+    # Grid
+    for i in range(9):
+        canvases.append(tkinter.Canvas(window, width=img_width*2, height=img_height*2))
+    # Bind key presses to the button functions
+    canvases[0].bind("n", next_image_callback)
+    canvases[0].bind("p", previous_image_callback)
+    canvases[0].bind("0", classify_0_callback)
+    canvases[0].bind("1", classify_1_callback)
+    canvases[0].bind("s", save_callback)
+    canvases[0].bind("<Escape>", exit_callback)
+    canvases[0].bind("<Enter>", mouse_callback)
+    # Create the buttons
+    next_image = tkinter.Button(window, text="next image [n]", command=next_image_callback, bg='deep pink')
+    previous_image = tkinter.Button(window, text="previous image [p]", command=previous_image_callback, bg='deep sky blue')
+    classify_0 = tkinter.Button(window, text="classify 0 (not at end of record) [0]", command=classify_0_callback, bg='lawn green')
+    classify_1 = tkinter.Button(window, text="classify 1 (at end of record) [1]", command=classify_1_callback, bg='red')
+    save = tkinter.Button(window, text="save annotations [s]", command=save_callback, bg='cyan2')
+    exit_ = tkinter.Button(window, text="exit (without saving) [e]", command=exit_callback, bg='gray25')
+    # Define the layout
+    canvases[0].grid(row=0, column=0, rowspan=3, columnspan=3)
+    for i in range(1,10):
+        canvases[i].grid(row=int((i-1)/3), column=(i-1)%3+3)
+    next_image.grid(row=3, column=0)
+    previous_image.grid(row=3, column=1)
+    classify_0.grid(row=3, column=2)
+    classify_1.grid(row=3, column=3)
+    save.grid(row=3, column=4)
+    exit_.grid(row=3, column=5)
+
+
+def draw_images():
+    global master_index
+    global canvases
+    global images
+    global examples
+    examples = []
+    for i in range(master_index, master_index + 10):
+        image = images[i,:].reshape((img_height, img_width))
+        if i == master_index:
+            multiplier = 6
+        else:
+            multiplier = 2
+        image = cv2.resize(image, None, fx=multiplier, fy=multiplier)
+        image = annotate(image, i) # overlay index and classification
+        examples.append(PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(image)))
+        canvases[i-master_index].create_image(0, 0, image=examples[i-master_index], anchor=tkinter.NW)
+    return
+
+
+def annotate(image, index):
+    global labels
+    # Draw index
+    cv2.putText(
+        img = image,
+        text = str(index),
+        org = (10,15),
+        fontFace = cv2.FONT_HERSHEY_PLAIN,
+        fontScale = 1,
+        color = (0,0,1),
+        lineType=cv2.LINE_AA, # anti-aliasing niceness
+        thickness = 1
+    )
+    # draw annotation
+    cv2.putText(
+        img = image,
+        text = str(labels[index]),
+        org = (image.shape[1] - 20, 15),
+        fontFace = cv2.FONT_HERSHEY_PLAIN,
+        fontScale = 1,
+        color = (0,0,1),
+        lineType=cv2.LINE_AA,
+        thickness = 1
+    )
+    return image
+
+    
+def next_image_callback(event=None):
+    global master_index
+    master_index+=1
+    draw_images()
+    
+def previous_image_callback(event=None):
+    global master_index
+    master_index-=1
+    draw_images()
+    
+def classify_0_callback(event=None):
+    global master_index
+    global labels
+    labels[master_index] = 0
+    next_image_callback()
+    
+def classify_1_callback(event=None):
+    global master_index
+    global labels
+    labels[master_index] = 1
+    next_image_callback()
+
+def save_callback(event=None):
+    global images
+    global labels
+    global args
+    full_data = np.concatenate((images, labels.reshape((labels.size,1))), axis=1)
+    with open(args.output_file, "wb") as outfile:
+        outfile.write(full_data.tobytes())
+    print("Data saved!")
+    return
+
+def exit_callback(event=None):
+    sys.exit(1)
+
+def mouse_callback(event=None):
+    global canvases
+    canvases[0].focus_set()
+    
+
+def main(args):
+    # initialise globals
+    global images
+    global labels
+    global window
+    global canvases
+    global master_index
+    
+    data = get_data()
+    images = data[:,:-1]
+    labels = data[:,-1].copy()
+    labels.setflags(write=1) # make sure it's writable
+    master_index = 0
+
+    create_gui()
+    draw_images()
+    
+    window.mainloop()
+    
+
+if __name__ == "__main__":
+    sys.exit(main(get_args()))
+    
+
+
