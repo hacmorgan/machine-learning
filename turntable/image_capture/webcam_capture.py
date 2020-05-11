@@ -2,7 +2,6 @@
 
 import cv2
 import numpy as np
-import csv
 import time
 import sys
 import argparse
@@ -34,9 +33,8 @@ def main(args):
         raise IOError("Cannot open webcam")
 
     global datafile
-    datafile = open(args.outfile, "a+")
+    datafile = open(args.outfile, "ab+")
 
-    writer = csv.writer(datafile)
     while True:
         ret, frame = cap.read()
         cap_time = time.time()
@@ -44,9 +42,9 @@ def main(args):
             continue
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         downsampled = cv2.resize(gray, None, fx=0.1, fy=0.1, interpolation=cv2.INTER_AREA)
-        downsampled_list = downsampled.reshape((64*48)).tolist()
-        downsampled_list.append(0)
-        writer.writerow(downsampled_list)
+        downsampled_vector = downsampled.reshape(64*48).astype(np.uint8)
+        downsampled_vector = np.append(downsampled_vector, np.array([0], dtype=np.uint8))
+        datafile.write(downsampled_vector.tobytes())
         print("Image saved at " + str(cap_time))
         # LPs can't exceed 90 minutes, but we still want some data around the centre
         if cap_time - start_time > 92*60:
