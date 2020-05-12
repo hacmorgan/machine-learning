@@ -57,7 +57,7 @@ def create_gui():
     classify_0 = tkinter.Button(window, text="classify 0 (not at end of record) [0]", command=classify_0_callback, bg='lawn green')
     classify_1 = tkinter.Button(window, text="classify 1 (at end of record) [1]", command=classify_1_callback, bg='red')
     save = tkinter.Button(window, text="save annotations [s]", command=save_callback, bg='cyan2')
-    exit_ = tkinter.Button(window, text="exit (without saving) [e]", command=exit_callback, bg='gray25')
+    exit_ = tkinter.Button(window, text="exit (without saving) [esc]", command=exit_callback, bg='gray25')
     # Define the layout
     canvases[0].grid(row=0, column=0, rowspan=3, columnspan=3)
     for i in range(1,10):
@@ -119,7 +119,7 @@ def annotate(image, index):
 def next_image_callback(event=None):
     global master_index
     global num_records
-    if master_index < num_records:
+    if master_index < num_records-1:
         master_index+=1
     draw_images()
     

@@ -4,6 +4,7 @@ import numpy as np
 import math
 import argparse
 import sys
+import time
 
 img_width = 64
 img_height = 48
@@ -64,7 +65,7 @@ def get_data(filename):
     all_data = all_data.astype(np.float32) / 255.0
     num_records = int(np.shape(all_data)[0] / (img_height*img_width+1))
     formatted_data = all_data.reshape((num_records, img_height*img_width+1))
-    return formatted_data.copy()
+    return formatted_data
 
 def get_args():
     parser = argparse.ArgumentParser(description='train a simple 3 layer neural network on given data')
@@ -92,8 +93,18 @@ def sgd(full_data, lmbda, eta, epochs, theta1, theta2):
        theta2 = theta2 - eta/m * theta2_grad
        train_costs.append(cost(y, fwd_prop(X, theta1, theta2), lmbda, theta1, theta2))
        test_costs.append(cost(y_test, fwd_prop(X_test, theta1, theta2), lmbda, theta1, theta2))
-       print("Epoch no. " + str(i) + " gave training cost: " + str(train_costs[-1]) + " and test cost: " + str(test_costs[-1]))
-       
+       test_accuracy(X_test, y_test, theta1, theta2)
+       print("Epoch no. " + str(i) + " gave training cost: " + str(train_costs[-1]) + " and test cost: " + str(test_costs[-1]) + "\n")
+       time.sleep(0.01)
+
+def test_accuracy(X_test, y_test, theta1, theta2):
+    h = fwd_prop(X_test, theta1, theta2)
+    num_examples = len(h)
+    perc_correct = np.sum( (y_test-np.round(h)) ** 2 ) / num_examples
+    print("Correctly classified " + str(int((1-perc_correct) * num_examples)) +
+          " out of " + str(num_examples) + " examples, which is an accuracy of " +
+          str((1-perc_correct) * 100) + "%")
+        
 
 def main(args):
     # tweakable params
