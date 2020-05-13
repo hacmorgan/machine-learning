@@ -19,7 +19,9 @@ class LED:
     def __init__(self, board_pin):
         # use board pin numbers rather than broadcom chip pin numbers
         GPIO.setmode(GPIO.BOARD)
+        GPIO.setwarnings(False)
         self.pin = board_pin
+        GPIO.setup(self.pin, GPIO.OUT)
         return
 
     def on(self):
@@ -30,9 +32,6 @@ class LED:
         
 
 def signal_handler(sig, frame):
-    global datafile
-    if datafile is not None:
-        datafile.close()
     sys.exit(0)
 
 def get_args():    
@@ -67,8 +66,10 @@ def main(args):
     with open(args.params, "r") as jsonfile:
         params = json.load(jsonfile)
 
-    theta1 = np.array(params["thetas"][0])
-    theta2 = np.array(params["thetas"][1])
+    theta1 = np.array(params["thetas"][0], dtype=np.float32)
+    theta2 = np.array(params["thetas"][1], dtype=np.float32)
+
+    print(theta2)
     
     while True:
         ret, frame = cap.read()
@@ -77,11 +78,14 @@ def main(args):
             continue
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         downsampled = cv2.resize(gray, None, fx=0.1, fy=0.1, interpolation=cv2.INTER_AREA)
-        downsampled_vector = downsampled.reshape(64*48)
-        downsampled_vector = np.append(np.array([1]), downsampled_vector)
-        decision = round(fwd_prop(downsampled_vector, theta1, theta2))
+        downsampled_vector = downsampled.reshape((1,64*48)).astype(np.float32) / 255.0
+        h = fwd_prop(downsampled_vector, theta1, theta2)
+        decision = np.round(h)
+        print(h)
+        
         if decision == 1:
             status_led.on()
+            print("record finished!")
         else:
             status_led.off()
         time.sleep(2)
