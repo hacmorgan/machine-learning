@@ -119,6 +119,7 @@ def main(args):
     full_data = get_data(args.training_data)
     # SGD
     theta1, theta2 = sgd(full_data, lmbda, eta, epochs, theta1, theta2)
+    print(theta2)
     # save params to file
     params = {
         "num_laters" : 3,
