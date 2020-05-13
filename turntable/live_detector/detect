@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+import cv2
+import numpy as np
+import time
+import sys
+import argparse
+import signal
+import json
+try:
+    import RPi.GPIO as GPIO
+    is_rpi = True
+except ModuleNotFoundError:
+    print("Raspberry Pi GPIO library not found, disabling LED functionality")
+    is_rpi = False
+
+    
+class LED:
+    def __init__(self, board_pin):
+        # use board pin numbers rather than broadcom chip pin numbers
+        GPIO.setmode(GPIO.BOARD)
+        self.pin = board_pin
+        return
+
+    def on(self):
+        GPIO.output(self.pin, GPIO.HIGH)
+
+    def off(self):
+        GPIO.output(self.pin, GPIO.LOW)
+        
+
+def signal_handler(sig, frame):
+    global datafile
+    if datafile is not None:
+        datafile.close()
+    sys.exit(0)
+
+def get_args():    
+    parser = argparse.ArgumentParser(description='Collect training data from the webcam')
+    parser.add_argument('--params', '-p', type=str, help='File storing the parameters of the neural network')
+    return parser.parse_args()
+
+def fwd_prop(X, theta1, theta2):
+    m = len(X)
+    X = np.concatenate( (np.ones((m,1)),X), axis=1)
+    z1 = np.matmul(X, theta1)
+    a1 = np.concatenate((np.ones((m,1)),sigmoid(z1)), axis=1)
+    z2 = np.matmul(a1, theta2)
+    return sigmoid(z2)
+
+def sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+def main(args):
+    # Handle SIGINT and SIGTERM
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        raise IOError("Cannot open webcam")
+
+    status_led = LED(11)
+    status_led.off()
+
+    with open(args.params, "r") as jsonfile:
+        params = json.load(jsonfile)
+
+    theta1 = np.array(params["thetas"][0])
+    theta2 = np.array(params["thetas"][1])
+    
+    while True:
+        ret, frame = cap.read()
+        cap_time = time.time()
+        if ret == False:
+            continue
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        downsampled = cv2.resize(gray, None, fx=0.1, fy=0.1, interpolation=cv2.INTER_AREA)
+        downsampled_vector = downsampled.reshape(64*48)
+        downsampled_vector = np.append(np.array([1]), downsampled_vector)
+        decision = round(fwd_prop(downsampled_vector, theta1, theta2))
+        if decision == 1:
+            status_led.on()
+        else:
+            status_led.off()
+        time.sleep(2)
+
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    sys.exit(main(get_args()))
