@@ -113,7 +113,7 @@ def main(args):
     hidden_units = 30
     lmbda = 1
     eta = 0.1
-    epochs = 200
+    epochs = 300
     # initialise thetas and get X and y from the data
     theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
     full_data = get_data(args.training_data)
