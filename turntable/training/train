@@ -5,6 +5,7 @@ import math
 import argparse
 import sys
 import time
+import json
 
 img_width = 64
 img_height = 48
@@ -95,7 +96,8 @@ def sgd(full_data, lmbda, eta, epochs, theta1, theta2):
        test_costs.append(cost(y_test, fwd_prop(X_test, theta1, theta2), lmbda, theta1, theta2))
        test_accuracy(X_test, y_test, theta1, theta2)
        print("Epoch no. " + str(i) + " gave training cost: " + str(train_costs[-1]) + " and test cost: " + str(test_costs[-1]) + "\n")
-       time.sleep(0.01)
+       time.sleep(0.05)
+    return theta1, theta2
 
 def test_accuracy(X_test, y_test, theta1, theta2):
     h = fwd_prop(X_test, theta1, theta2)
@@ -116,7 +118,17 @@ def main(args):
     theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
     full_data = get_data(args.training_data)
     # SGD
-    sgd(full_data, lmbda, eta, epochs, theta1, theta2)
+    theta1, theta2 = sgd(full_data, lmbda, eta, epochs, theta1, theta2)
+    # save params to file
+    params = {
+        "num_laters" : 3,
+        "dimensions" : (theta1.shape, theta2.shape),
+        "thetas" : (theta1.tolist(), theta2.tolist())
+    }
+    save_name = str(int(time.time())) + ".json"
+    with open(save_name, "w") as jsonfile:
+        json.dump(params, jsonfile)
+    return
     
 if __name__ == '__main__':
     sys.exit(main(get_args()))

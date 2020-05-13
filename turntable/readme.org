@@ -1,5 +1,5 @@
 * Image capture
-** Code (RPi and Webcam)
+** Code 
 - The python script will capture images as 64x48 grayscale images.
 - We will save these to disk as CSVs. The format of the image when it comes in is as a 48 element numpy array, each with 64 values, so these will be witten to the csv one row of the numpy array at a time. e.g.:
 
