@@ -64,12 +64,11 @@ def get_data(filename):
     with open(filename, "rb") as datafile:
         all_data = np.frombuffer(datafile.read(), dtype=np.uint8)
     all_data = all_data.astype(np.float32)
-    scaling_matrix = np.ones(all_data.shape) * 255
-    scaling_matrix[:,-1] = 1
-    print(scaling_matrix)
-    exit
     num_records = int(np.shape(all_data)[0] / (img_height*img_width+1))
     formatted_data = all_data.reshape((num_records, img_height*img_width+1))
+    scaling_matrix = np.ones(formatted_data.shape, dtype = np.float32) * 255
+    scaling_matrix[:,-1] = 1
+    formatted_data /= scaling_matrix
     return formatted_data
 
 def get_args():
@@ -100,7 +99,7 @@ def sgd(full_data, lmbda, eta, epochs, theta1, theta2):
        test_costs.append(cost(y_test, fwd_prop(X_test, theta1, theta2), lmbda, theta1, theta2))
        test_accuracy(X_test, y_test, theta1, theta2)
        print("Epoch no. " + str(i) + " gave training cost: " + str(train_costs[-1]) + " and test cost: " + str(test_costs[-1]) + "\n")
-       time.sleep(0.05)
+       # time.sleep(0.05)
     return theta1, theta2
 
 def test_accuracy(X_test, y_test, theta1, theta2):
@@ -115,15 +114,14 @@ def test_accuracy(X_test, y_test, theta1, theta2):
 def main(args):
     # tweakable params
     hidden_units = 30
-    lmbda = 1
+    lmbda = 3
     eta = 0.1
-    epochs = 300
+    epochs = 400
     # initialise thetas and get X and y from the data
     theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
     full_data = get_data(args.training_data)
     # SGD
     theta1, theta2 = sgd(full_data, lmbda, eta, epochs, theta1, theta2)
-    print(theta2)
     # save params to file
     params = {
         "num_laters" : 3,
