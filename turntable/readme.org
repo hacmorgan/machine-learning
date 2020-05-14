@@ -35,19 +35,11 @@ In its current form, the code
 
 
 * Next steps
-** Stages
-*** DONE 1: train on ONLY hip-hop data and test with hip-hop data, record results! 
-142/143 (99.99967736988143%) accuraccy achieved 
-    hidden_units = 30
-    lmbda = 1
-    eta = 0.1
-    epochs = 200
-*** TODO 2: collct non-hip-hop data (store separately)
-**** TODO 2.1: test non-hip-hop data on the network that has been trained on hip-hop  
-**** TODO 2.2: Train a network on all data, but *the same number of training examples*
-i.e. remove some of the hip-hop and replace with non
-*** TODO 3: Compare the results!
+** Fine-tune this network's parameters to find its optimal performance
+** Write SGD function in C
+** Try a convolutional network
 
+* Other stuff
 ** List of records used for training
 *** hip-hop
 **** 7" singles (and the 10" GE Cypher)
@@ -61,3 +53,4 @@ i.e. remove some of the hip-hop and replace with non
 - Brother Ali: The Undisputed Truth
 - Plutonic Lab: Deep Above the Noise
 - Aesop Rock: The Impossible Kid
+- Horrorshow: King Amonst Many
