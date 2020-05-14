@@ -27,11 +27,8 @@
 - The network is constructed in a similar manner to those used in Prof. Andrew Ng's online course, where the weights matrices include a row (in this case) of biases, and a neuron that only outputs 1 is added to the first and second layers to multiply these biases.
   - Idk if this is standard, but I have also seen a separate bias vector used.
 
-** Training
-- Once the labelled data is imported into a numpy matrix, the rows are shuffled 
-
 ** Preliminary results
-In its current form, the code 
+In its current form, the code achieves about 77% accuracy on the test set, with a regularization parameter of 3 and a learning rate of 0.1. In practice, the presence a record at the end of its travel only increased the output neuron's activation from 0.22 to 0.38, quite reliably though.
 
 
 * Next steps
