@@ -63,7 +63,11 @@ def initialise_weights(theta1_dims, theta2_dims):
 def get_data(filename):
     with open(filename, "rb") as datafile:
         all_data = np.frombuffer(datafile.read(), dtype=np.uint8)
-    all_data = all_data.astype(np.float32) / 255.0
+    all_data = all_data.astype(np.float32)
+    scaling_matrix = np.ones(all_data.shape) * 255
+    scaling_matrix[:,-1] = 1
+    print(scaling_matrix)
+    exit
     num_records = int(np.shape(all_data)[0] / (img_height*img_width+1))
     formatted_data = all_data.reshape((num_records, img_height*img_width+1))
     return formatted_data

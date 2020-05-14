@@ -1,34 +1,40 @@
 * Image capture
 ** Code 
-- The python script will capture images as 64x48 grayscale images.
-- We will save these to disk as CSVs. The format of the image when it comes in is as a 48 element numpy array, each with 64 values, so these will be witten to the csv one row of the numpy array at a time. e.g.:
+- =image_capture/webcam-capture= captures images as 64 * 48 grayscale images, downsampled from the original 640 * 480 reslution of the webcam.
+- These images come as numpy arrays, which are unroled to 1 * 3072 vectors of 8-bit unsigned integers (i.e. they are saved on the interval [0, 255], to be rescaled later)
+- A zero is apended to the end of the vector, which represents the classification of that image. This will later be modified by the labelling script.
+- Each vector is written to a binary file using numpy's =tobytes()= method. Originally this data was stored in CSV format, but this felt messy.
 
-1 2 3 4
-5 6 7 8
 
-becomes
-
-1,2,3,4,5,6,7,8
-
-note: the values will remain on the interval [0,255], so converting to a range between 0 and 1 will have to be done later.
-
-- we will append a final 0 to each row of the CSV. This will be its classification, which will be modified and rewritten by the `label` program.
-
-**** DONE the script should take an argument to determine the name of the file it saves to
-**** TODO add zeros to the existing data
-**** TODO convert that data to binary
-**** TODO write new data as binary with zeros
-
-*check the existing images' quality!*
-
-*** Classifier
-**** TODO Make a Tkinter inteface that shows a number of images at a time, one big and the next (say) 9 small.
-**** TODO Have a drop down box for classification type
-**** TODO Allow the user to apply that classification to the big image (one button), or to all the images, or an input. This means each image should have a number title
-**** TODO The use must also be able to move back and forth to an image (or multiple) at a time
+* Labelling
+** Code
+- Labelling is done with =labelling/label=, a Tkinter based GUI that shows the image to be labelled, plus the next nine images in a grid.
+- Keyboard shortcuts are used to maximise the efficiency of this process.
+  - '1' classifies the image as 'record finished' (which is literally stored as a 1), and moves to the next image.
+  - '0' classifies the image as 'anything else', and moves to the next image, but this is the default value for the classification so is rarely necessary in pactice.
+  - 'n' moves to the next image
+  - 'p' moves to the previous image
+- The data is imported into a numpy array of size /m * 3073/, for m training examples, which the gui iterates through, and is written to a new file name, again in binary format.
 
 
 * Training
+** Code
+- The code to train the network (=training/train=) does not use any neural network libraries. I know this is almost invariably less efficient than using a purpose built, well optimised library; but I just wanted to do it from scratch.
+- In its current state, many things are hardcoded (such as the number of layers), and many nice features such as automated stopping are not present. I would like to implement these in the future (more on that below).
+
+** Network
+- In its current state, the network is a conventional (i.e. non-convolutional) neural network, with one hiden layer of 30 neurons, and a single output neuron. 
+- The network is constructed in a similar manner to those used in Prof. Andrew Ng's online course, where the weights matrices include a row (in this case) of biases, and a neuron that only outputs 1 is added to the first and second layers to multiply these biases.
+  - Idk if this is standard, but I have also seen a separate bias vector used.
+
+** Training
+- Once the labelled data is imported into a numpy matrix, the rows are shuffled 
+
+** Preliminary results
+In its current form, the code 
+
+
+* Next steps
 ** Stages
 *** DONE 1: train on ONLY hip-hop data and test with hip-hop data, record results! 
 142/143 (99.99967736988143%) accuraccy achieved 
