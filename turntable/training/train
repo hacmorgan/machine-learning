@@ -114,9 +114,9 @@ def test_accuracy(X_test, y_test, theta1, theta2):
 def main(args):
     # tweakable params
     hidden_units = 30
-    lmbda = 3
-    eta = 0.1
-    epochs = 400
+    lmbda = 0.1
+    eta = 33
+    epochs = 800
     # initialise thetas and get X and y from the data
     theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
     full_data = get_data(args.training_data)
