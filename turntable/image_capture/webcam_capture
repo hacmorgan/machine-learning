@@ -43,6 +43,7 @@ def main(args):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         downsampled = cv2.resize(gray, None, fx=0.1, fy=0.1, interpolation=cv2.INTER_AREA)
         downsampled_vector = downsampled.reshape(64*48).astype(np.uint8)
+        print(downsampled_vector.astype(np.float32) / 255.0)
         downsampled_vector = np.append(downsampled_vector, np.array([0], dtype=np.uint8))
         datafile.write(downsampled_vector.tobytes())
         print("Image saved at " + str(cap_time))

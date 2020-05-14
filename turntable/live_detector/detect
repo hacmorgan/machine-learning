@@ -79,9 +79,11 @@ def main(args):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         downsampled = cv2.resize(gray, None, fx=0.1, fy=0.1, interpolation=cv2.INTER_AREA)
         downsampled_vector = downsampled.reshape((1,64*48)).astype(np.float32) / 255.0
+        print(downsampled_vector)
         h = fwd_prop(downsampled_vector, theta1, theta2)
         decision = np.round(h)
         print(h)
+        print()
         
         if decision == 1:
             status_led.on()
