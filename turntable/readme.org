@@ -33,8 +33,11 @@ In its current form, the code achieves about 77% accuracy on the test set, with 
 
 * Next steps
 ** Fine-tune this network's parameters to find its optimal performance
+- Balance dataset
+- Brightness/contrast
 ** Write SGD function in C
 ** Try a convolutional network
+
 
 * Other stuff
 ** List of records used for training

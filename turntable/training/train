@@ -114,7 +114,7 @@ def test_accuracy(X_test, y_test, theta1, theta2):
 def main(args):
     # tweakable params
     hidden_units = 30
-    lmbda = 0.1
+    lmbda = 1
     eta = 33
     epochs = 800
     # initialise thetas and get X and y from the data
