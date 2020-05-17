@@ -18,7 +18,7 @@ def get_args():
     global args
     parser = argparse.ArgumentParser(description='labelling tool using Tkinter')
     parser.add_argument('--input-file', '-i', type=str, required=True, help='file containing the images and default 0 classifications')
-    parser.add_argument('--output-file', '-o', type=str, required=True, help='file to write to with updated annotations')
+    parser.add_argument('--output-file', '-o', type=str, required=False, help='file to write to with updated annotations (will save to input file if not given)')
     args = parser.parse_args()
 
 
@@ -46,6 +46,7 @@ def create_gui():
     # Bind key presses to the button functions
     canvases[0].bind("n", next_image_callback)
     canvases[0].bind("p", previous_image_callback)
+    canvases[0].bind("k", skip_num_images_callback)
     canvases[0].bind("0", classify_0_callback)
     canvases[0].bind("1", classify_1_callback)
     canvases[0].bind("s", save_callback)
@@ -56,6 +57,9 @@ def create_gui():
     # Create the buttons
     next_image = tkinter.Button(window, text="next image [n]", command=next_image_callback, bg='deep pink')
     previous_image = tkinter.Button(window, text="previous image [p]", command=previous_image_callback, bg='deep sky blue')
+    global num_images
+    num_images = tkinter.Entry(window)
+    skip_num_images = tkinter.Button(window, text="skip ^ images [k]", command=skip_num_images_callback)
     classify_0 = tkinter.Button(window, text="classify 0 (not at end of record) [0]", command=classify_0_callback, bg='lawn green')
     classify_1 = tkinter.Button(window, text="classify 1 (at end of record) [1]", command=classify_1_callback, bg='red')
     global percentage_true
@@ -70,12 +74,14 @@ def create_gui():
         canvases[i].grid(row=int((i-1)/3), column=(i-1)%3+3)
     next_image.grid(row=3, column=0)
     previous_image.grid(row=4, column=0)
-    classify_0.grid(row=3, column=1)
-    classify_1.grid(row=4, column=1)
-    percentage_true.grid(row=3, column=2)
-    delete_example.grid(row=4, column=2)
-    save.grid(row=3, column=3)
-    exit_.grid(row=4, column=3)
+    num_images.grid(row=3, column=1)
+    skip_num_images.grid(row=4, column=1)
+    classify_0.grid(row=3, column=2)
+    classify_1.grid(row=4, column=2)
+    percentage_true.grid(row=3, column=3)
+    delete_example.grid(row=4, column=3)
+    save.grid(row=3, column=4)
+    exit_.grid(row=4, column=4)
     percentage_true.insert("1.0", calc_percentage_correct())
 
 
@@ -130,11 +136,16 @@ def update_percentage_true():
     global percentage_true
     percentage_true.delete("1.0", "1.6")
     percentage_true.insert("1.0", calc_percentage_correct())
+
     
 def calc_percentage_correct():
     global labels
     return str(round(np.mean(labels)*100, 2)) + "%"
-    
+
+
+############################
+#    CALLBACK FUNCTIONS    #
+############################
 def next_image_callback(event=None):
     global master_index
     global num_records
@@ -146,6 +157,16 @@ def previous_image_callback(event=None):
     global master_index
     if master_index > 0:
         master_index-=1
+    draw_images()
+
+def skip_num_images_callback(event=None):
+    global master_index
+    global num_images
+    global num_records
+    num_to_skip = int(num_images.get())
+    if master_index + num_to_skip >= num_records - 1:
+        num_to_skip = num_records - 1
+    master_index += num_to_skip
     draw_images()
     
 def classify_0_callback(event=None):
@@ -167,16 +188,21 @@ def delete_callback(event=None):
     global labels
     global master_index
     global percentage_true
+    global num_records
     images = np.delete(images, master_index, 0)
     labels = np.delete(labels, master_index, 0)
     update_percentage_true()
-    next_image_callback()
+    num_records -= 1
+    draw_images()
+    # next_image_callback()
 
 def save_callback(event=None):
     global images
     global labels
     global args
     full_data = np.concatenate((images, labels.reshape((labels.size,1))), axis=1)
+    if args.output_file is None:
+        args.output_file = args.input_file
     with open(args.output_file, "wb") as outfile:
         outfile.write(full_data.tobytes())
     print("Data saved!")

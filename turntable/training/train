@@ -115,7 +115,7 @@ def main(args):
     # tweakable params
     hidden_units = 30
     lmbda = 1
-    eta = 33
+    eta = 3
     epochs = 800
     # initialise thetas and get X and y from the data
     theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
