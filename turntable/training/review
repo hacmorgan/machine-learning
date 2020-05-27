@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+import cv2
+import numpy as np
+import time
+import sys
+import os
+import argparse
+import signal
+import json
+
+
+    
+def get_args():    
+    parser = argparse.ArgumentParser(description='Review a folder of json files')
+    parser.add_argument('--input-directory', '-i', type=str, default='.', help='Folder contaning json files')
+    parser.add_argument('--save-name', '-s', type=str, default='best_network.json', help='name of json file to save the best network to')
+    return parser.parse_args()
+
+
+def get_networks(input_directory):
+    networks = []
+    for filename in os.listdir(input_directory):
+        filename = input_directory + '/' + filename
+        with open(filename) as jsonfile:
+            network = json.load(jsonfile)
+            for i in range(len(network["thetas"])):
+                network["thetas"][i] = np.array(network["thetas"][i], dtype=np.float32)
+            networks.append(network)
+    return networks
+    
+
+def find_best_network(networks):
+    best_network = None
+    for network in networks:
+        if best_network == None or network["accuracies"]["num_correct"][-1] > best_network["accuracies"]["num_correct"][-1]:
+            best_network = network
+            print("Best accuracy so far: " +
+                  str(best_network["accuracies"]["num_correct"][-1] / best_network["accuracies"]["num_examples"]) +
+                  "%, on network with eta: " + str(best_network["hyperparams"]["eta"]) +
+                  ", and lmbda: " + str(best_network["hyperparams"]["lmbda"]))
+    return best_network
+    
+
+def save_best_network_to_file(best_network, save_name):
+    for i in range(len(best_network["thetas"])):
+        best_network["thetas"][i] = best_network["thetas"][i].tolist()
+    with open(save_name, "w") as jsonfile:
+        json.dump(best_network, jsonfile)
+
+
+def main(args):
+    networks = get_networks(args.input_directory)
+    best_network = find_best_network(networks)
+    save_best_network_to_file(best_network, args.save_name)
+    
+    
+if __name__ == '__main__':
+    sys.exit(main(get_args()))

@@ -7,130 +7,189 @@ import sys
 import time
 import json
 
+
+'''
+todo
+- '--hidden-layer-sizes' input arg: comma separated list of hidden layer sizes
+  - will determine the value of shapes parameter
+'''
+
+
 img_width = 64
 img_height = 48
 
-def cost(y, h, lmbda, theta1, theta2):
-    m = len(y)
-    return (
-        1.0/m * np.sum( -y * np.log(h) - (1 - y) * np.log(1-h) ) +
-        float(lmbda)/(2*m) *  (np.sum(theta1[1:,:] ** 2) + np.sum(theta2[1:,:] ** 2))
-    )
 
-def theta_grads(X, y, lmbda, theta1, theta2):
+def costs(data_dict, network):
+    for X, y, cost_list in (
+            (data_dict["X_train"], data_dict["y_train"], network["accuracies"]["train_costs"]),
+            (data_dict["X_val"], data_dict["y_val"], network["accuracies"]["val_costs"])
+    ):
+        m = len(y)
+        activations, zeds = fwd_prop(X, network)
+        h = activations[-1]
+        regterm = 0
+        for theta in network["thetas"]:
+            regterm += np.sum(theta[1:,:] ** 2)
+        cost_list.append( 1.0/m * np.sum( -y * np.log(h) - (1 - y) * np.log(1-h) ) +
+                      float(network["hyperparams"]["lmbda"])/(2*m) * regterm )
+    return
+
+
+def theta_grads(X, y, network):
     # initialisation
     m = len(y)
-    theta1_grad = np.zeros(np.shape(theta1))
-    theta2_grad = np.zeros(np.shape(theta2))
+    for i, shape in enumerate(network["shapes"]):
+        network["theta_grads"][i] = np.zeros(shape)
     # forwardprop
-    X = np.concatenate( (np.ones((m,1)),X), axis=1)
-    z1 = np.matmul(X, theta1)
-    a1 = np.concatenate((np.ones((m,1)),sigmoid(z1)), axis=1)
-    z2 = np.matmul(a1, theta2)
-    a2 = sigmoid(z2)
+    activations, zeds = fwd_prop(X, network)
     # backprop
-    delta2 = a2 - y
-    theta2_grad = 1.0/m * np.matmul(a1.transpose(), delta2)
-    delta1 = np.matmul(delta2, theta2[1:,:].transpose()) * sigmoid_gradient(z1)
-    theta1_grad = 1.0/m * np.matmul(X.transpose(), delta1)
-    theta2_reg = lmbda/m * theta2
-    theta2_reg[0,:] = 0
-    theta2_grad += theta2_reg
-    theta1_reg = lmbda/m * theta1
-    theta1_reg[0,:] = 0
-    theta1_grad += theta1_reg
-    return theta1_grad, theta2_grad
+    for i in range(len(network["thetas"])-1, -1, -1):
+        if i == len(network["thetas"])-1:
+            delta = activations[-1] - y
+        else:
+            delta = np.matmul(prev_delta, prev_theta[1:,:].transpose()) * sigmoid_gradient(zeds[i+1]) # we add 1 because activations has the input activations as wel as those from each layer of the network
+        network["theta_grads"][i] = (1/m * np.matmul(activations[i].transpose(), delta))
+        theta_reg = network["hyperparams"]["lmbda"]/m * network["thetas"][i]
+        theta_reg[0,:] = 0
+        network["theta_grads"][i] += theta_reg 
+        prev_delta = delta
+        prev_theta = network["thetas"][i]
+    return
+
 
 def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
+
 def sigmoid_gradient(z):
     return sigmoid(z) * (1 - sigmoid(z))
 
-def fwd_prop(X, theta1, theta2):
+
+def fwd_prop(X, network):
     m = len(X)
-    X = np.concatenate( (np.ones((m,1)),X), axis=1)
-    z1 = np.matmul(X, theta1)
-    a1 = np.concatenate((np.ones((m,1)),sigmoid(z1)), axis=1)
-    z2 = np.matmul(a1, theta2)
-    return sigmoid(z2)
+    activations = [np.concatenate( (np.ones((m,1)),X), axis=1 )]
+    zeds = []
+    for theta in network["thetas"]:
+        zeds.append( np.matmul(activations[-1], theta) )
+        activations.append( np.concatenate((np.ones((m,1)), sigmoid(zeds[-1])), axis=1) )
+    activations[-1] = np.delete(activations[-1], 0, 1) 
+    return activations, zeds
 
-def initialise_weights(theta1_dims, theta2_dims):
-    theta1 = np.random.normal(loc=0, scale=(1/math.sqrt(theta1_dims[0])), size=theta1_dims)
-    theta2 = np.random.normal(loc=0, scale=(1/math.sqrt(theta2_dims[0])), size=theta2_dims)
-    return theta1, theta2
 
+def initialise_weights(network):
+    for shape in network["shapes"]:
+        network["thetas"].append( np.random.normal(loc=0, scale=(1/math.sqrt(shape[0])), size=shape) )
+        network["theta_grads"].append(np.zeros(shape))
+    return
+
+
+# return a dictionary with shuffled and segmented data
 def get_data(filename):
+    # read data from file
     with open(filename, "rb") as datafile:
         all_data = np.frombuffer(datafile.read(), dtype=np.uint8)
     all_data = all_data.astype(np.float32)
     num_records = int(np.shape(all_data)[0] / (img_height*img_width+1))
+    # reformat and scale the data
     formatted_data = all_data.reshape((num_records, img_height*img_width+1))
     scaling_matrix = np.ones(formatted_data.shape, dtype = np.float32) * 255
     scaling_matrix[:,-1] = 1
     formatted_data /= scaling_matrix
-    return formatted_data
+    # shuffle and put in dictionary
+    np.random.shuffle(formatted_data)
+    train_index = int(0.6 * len(formatted_data))
+    val_index = int(0.8 * len(formatted_data))
+    data_dict = {
+        "X_train" : formatted_data[:train_index, :-1],
+        "y_train" : formatted_data[:train_index, -1].reshape((train_index,1)),
+        "X_val" : formatted_data[train_index:val_index, :-1],
+        "y_val" : formatted_data[train_index:val_index, -1].reshape((val_index-train_index,1)),
+        "X_test" : formatted_data[val_index:, :-1],
+        "y_test" : formatted_data[val_index:, -1].reshape((len(formatted_data)-val_index,1))
+    }
+    return data_dict
 
+
+def sgd(network, data_dict, no_improvement_in=10):
+    training_data = np.concatenate((data_dict["X_train"], data_dict["y_train"]), axis=1)
+    m = len(training_data)
+    while True:
+        np.random.shuffle(training_data)
+        X = training_data[:,:-1]
+        y = training_data[:,-1].reshape((len(training_data),1))
+        theta_grads(X, y, network)
+        # update weights
+        for i, theta_grad in enumerate(network["theta_grads"]):
+            network["thetas"][i] -= network["hyperparams"]["eta"] / m * theta_grad
+        costs(data_dict, network)
+        test_accuracy(X, y, network)
+        num_correct = network["accuracies"]["num_correct"][-no_improvement_in:]
+        if len(num_correct) == no_improvement_in and num_correct.count(num_correct[-1]) == no_improvement_in:
+            print("eta: " + str(network["hyperparams"]["eta"]) + ", "
+                  "lambda: " + str(network["hyperparams"]["lmbda"]) + ", "
+                  "num correct: " + str(network["accuracies"]["num_correct"][-1]))
+            return
+                                   
+
+def test_accuracy(X, y, network):
+    activations, zeds = fwd_prop(X, network)
+    h = activations[-1]
+    # define num_examples if not yet done
+    if network["accuracies"]["num_examples"] == 0:
+        network["accuracies"]["num_examples"] = len(h)
+    num_examples = network["accuracies"]["num_examples"]
+    num_correct = num_examples - np.sum( (y-np.round(h)) ** 2 )
+    network["accuracies"]["num_correct"].append(num_correct)
+    perc_correct = num_correct / num_examples
+    global verbose
+    if verbose:
+        print("Correctly classified " + str(num_correct) + 
+              " out of " + str(num_examples) + " examples, which is an accuracy of " +
+              str(perc_correct * 100) + "%")
+
+
+##############
+#    MAIN    #
+##############
 def get_args():
     parser = argparse.ArgumentParser(description='train a simple 3 layer neural network on given data')
+    parser.add_argument('--eta', type=float, default=1, help='learning rate') 
+    parser.add_argument('--lmbda', type=float, default=3, help='regularization parameter') 
+    parser.add_argument('--no-improvement-in', type=int, default=50, help='number of successive epochs without improvement before considering training over') 
     parser.add_argument('--training-data', '-t', type=str, required=True, help='file containing training data')
+    parser.add_argument('--verbose', '-v', action='store_true')
     return parser.parse_args()
 
-def sgd(full_data, lmbda, eta, epochs, theta1, theta2):
-    # we will designate the last 10% of data to be training data
-    np.random.shuffle(full_data)
-    cutoff_point = int(0.9 * len(full_data))
-    training_data = full_data[:cutoff_point, :]
-    test_data = full_data[cutoff_point:, :]
-    X_test = test_data[:,:-1]
-    y_test = test_data[:,-1].reshape((len(full_data)-cutoff_point,1))
-    m = len(training_data)
-    train_costs = []
-    test_costs = []
-    for i in range(epochs):
-       np.random.shuffle(training_data)
-       X = training_data[:,:-1]
-       y = training_data[:,-1].reshape((cutoff_point,1))
-       theta1_grad, theta2_grad = theta_grads(X, y, lmbda, theta1, theta2)
-       # update weights
-       theta1 = theta1 - eta/m * theta1_grad
-       theta2 = theta2 - eta/m * theta2_grad
-       train_costs.append(cost(y, fwd_prop(X, theta1, theta2), lmbda, theta1, theta2))
-       test_costs.append(cost(y_test, fwd_prop(X_test, theta1, theta2), lmbda, theta1, theta2))
-       test_accuracy(X_test, y_test, theta1, theta2)
-       print("Epoch no. " + str(i) + " gave training cost: " + str(train_costs[-1]) + " and test cost: " + str(test_costs[-1]) + "\n")
-       # time.sleep(0.05)
-    return theta1, theta2
-
-def test_accuracy(X_test, y_test, theta1, theta2):
-    h = fwd_prop(X_test, theta1, theta2)
-    num_examples = len(h)
-    perc_correct = np.sum( (y_test-np.round(h)) ** 2 ) / num_examples
-    print("Correctly classified " + str(int((1-perc_correct) * num_examples)) +
-          " out of " + str(num_examples) + " examples, which is an accuracy of " +
-          str((1-perc_correct) * 100) + "%")
-        
-
 def main(args):
-    # tweakable params
+    # set verbose flag
+    global verbose
+    verbose = args.verbose
+    # initialise network dictionary
     hidden_units = 30
-    lmbda = 1
-    eta = 3
-    epochs = 800
-    # initialise thetas and get X and y from the data
-    theta1, theta2 = initialise_weights((img_width*img_height+1, hidden_units), (hidden_units+1, 1))
-    full_data = get_data(args.training_data)
-    # SGD
-    theta1, theta2 = sgd(full_data, lmbda, eta, epochs, theta1, theta2)
-    # save params to file
-    params = {
-        "num_laters" : 3,
-        "dimensions" : (theta1.shape, theta2.shape),
-        "thetas" : (theta1.tolist(), theta2.tolist())
+    network = {
+        "hyperparams" : { "lmbda" : args.lmbda,
+                          "eta" : args.eta },
+        "shapes" : ( (img_width*img_height+1, hidden_units), (hidden_units+1, 1) ),
+        "thetas" : [],
+        "theta_grads" : [],
+        "accuracies" : { "num_examples" : 0,
+                         "num_correct" : [],
+                         "val_costs" : [],
+                         "train_costs" : []}
     }
-    save_name = str(int(time.time())) + ".json"
-    with open(save_name, "w") as jsonfile:
-        json.dump(params, jsonfile)
+    initialise_weights(network)
+    data_dict = get_data(args.training_data)
+    # perform gradient descent
+    sgd(network, data_dict, args.no_improvement_in)
+    for i in range(len(network["thetas"])):
+        network["thetas"][i] = network["thetas"][i].tolist()
+        network["theta_grads"][i] = network["theta_grads"][i].tolist()
+    save_string = '_'.join(["lmbda", str(network["hyperparams"]["lmbda"]),
+                            "eta", str(network["hyperparams"]["eta"]),
+                            "no-imp-in", str(args.no_improvement_in),
+                            ".json"])
+    with open(save_string, "w") as jsonfile:
+        json.dump(network, jsonfile)
     return
     
 if __name__ == '__main__':
